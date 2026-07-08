@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { socket } from "../socket";
+import { socket, getClientId } from "../socket";
 import type {
   Note,
   Player,
@@ -46,7 +46,7 @@ export default function Room() {
   useEffect(() => {
     const name = localStorage.getItem("nombre") || "Detective";
     socket.connect();
-    socket.emit("room:join", { code, name });
+    socket.emit("room:join", { code, name, clientId: getClientId() });
 
     socket.on("room:state", (s: RoomState) => setState(s));
     socket.on("players:update", (players: Player[]) =>

@@ -40,6 +40,7 @@ export interface Objective {
 export interface Player {
   id: number;
   room_id: number;
+  client_id: string | null;
   name: string;
   color: string;
   online: number;
