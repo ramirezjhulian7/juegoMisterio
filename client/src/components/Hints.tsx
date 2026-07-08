@@ -1,36 +1,51 @@
+import { useEffect, useState } from "react";
 import type { Hint } from "../types";
 
 interface Props {
-  hints: Hint[];
-  revealed: number[];
-  onReveal: () => void;
+  hints: Hint[]; // ya vienen recortadas al nº desbloqueado
+  unlockedHints: number;
+  secondsToNextHint: number | null;
 }
 
-export default function Hints({ hints, revealed, onReveal }: Props) {
-  const revealedSet = new Set(revealed);
-  const shown = hints.filter((h) => revealedSet.has(h.id));
-  const remaining = hints.length - shown.length;
+export default function Hints({ hints, unlockedHints, secondsToNextHint }: Props) {
+  const [countdown, setCountdown] = useState<number | null>(secondsToNextHint);
+
+  // Cuenta regresiva local hasta la próxima pista.
+  useEffect(() => {
+    setCountdown(secondsToNextHint);
+  }, [secondsToNextHint, unlockedHints]);
+
+  useEffect(() => {
+    if (countdown == null) return;
+    const t = setInterval(() => {
+      setCountdown((c) => (c == null ? c : Math.max(0, c - 1)));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [countdown == null]);
+
+  const mmss = (s: number) =>
+    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   return (
     <div className="hints">
-      <h3>💡 Pistas ({shown.length}/{hints.length})</h3>
-      {shown.length === 0 && (
+      <h3>💡 Pistas ({unlockedHints})</h3>
+      {hints.length === 0 && (
         <p style={{ color: "var(--muted)", fontSize: 13 }}>
-          ¿Atascados? Revelen una pista. Se comparte con todo el equipo.
+          Las pistas se desbloquean solas con el tiempo. Investiguen mientras tanto.
         </p>
       )}
-      {shown.map((h, i) => (
+      {hints.map((h, i) => (
         <div key={h.id} className="hint-item">
           <span className="hint-n">{i + 1}</span> {h.text}
         </div>
       ))}
-      {remaining > 0 ? (
-        <button className="hint-btn" onClick={onReveal}>
-          Revelar pista ({remaining} restantes)
-        </button>
+      {countdown != null ? (
+        <div className="hint-timer">
+          ⏳ Próxima pista en <strong>{mmss(countdown)}</strong>
+        </div>
       ) : (
         hints.length > 0 && (
-          <p style={{ color: "var(--muted)", fontSize: 12 }}>No quedan más pistas.</p>
+          <p style={{ color: "var(--muted)", fontSize: 12 }}>Ya se revelaron todas las pistas.</p>
         )
       )}
     </div>

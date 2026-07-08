@@ -18,6 +18,8 @@ export interface Evidence {
   title: string;
   image_path: string;
   position: number;
+  locked: number;
+  suspect_id: number | null;
 }
 
 export interface Suspect {
@@ -104,8 +106,12 @@ export interface RoomState {
   players: Player[];
   notes: Note[];
   board: { suspect_id: number; status: SuspectStatus }[];
-  revealedHints: number[];
   deductions: Deduction[];
   votes: Vote[];
+  searches: { suspect_id: number; player_id: number | null }[];
+  searchBudget: number;
+  unlockedHints: number;
+  secondsToNextHint: number | null;
+  accusationLockUntil: string | null;
   you: Player;
 }

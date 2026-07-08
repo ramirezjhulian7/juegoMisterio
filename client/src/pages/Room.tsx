@@ -66,9 +66,47 @@ export default function Room() {
         })
     );
     socket.on(
-      "hint:revealed",
-      ({ revealedHints }: { revealedHints: number[] }) =>
-        setState((p) => (p ? { ...p, revealedHints } : p))
+      "hints:unlocked",
+      ({
+        unlockedHints,
+        hints,
+        secondsToNextHint,
+      }: {
+        unlockedHints: number;
+        hints: RoomState["hints"];
+        secondsToNextHint: number | null;
+      }) => {
+        flash("💡 Se desbloqueó una nueva pista.");
+        setState((p) => (p ? { ...p, unlockedHints, hints, secondsToNextHint } : p));
+      }
+    );
+    socket.on(
+      "search:done",
+      ({
+        by,
+        suspectName,
+        budgetLeft,
+        evidence,
+        searches,
+      }: {
+        by: string;
+        suspectName: string;
+        budgetLeft: number;
+        evidence: Evidence[];
+        searches: { suspect_id: number; player_id: number | null }[];
+      }) => {
+        flash(`🔍 ${by} ordenó registrar a ${suspectName}. Registros restantes: ${budgetLeft}.`);
+        setState((p) =>
+          p ? { ...p, evidence, searches, searchBudget: budgetLeft } : p
+        );
+      }
+    );
+    socket.on(
+      "accusation:locked",
+      ({ lockSeconds, until }: { lockSeconds: number; wrong: number; until: string | null }) => {
+        flash(`⛔ Acusación incorrecta. Bloqueada ${lockSeconds}s: reúnan más pruebas.`);
+        setState((p) => (p ? { ...p, accusationLockUntil: until } : p));
+      }
     );
     socket.on("deduction:added", (d: Deduction) =>
       setState((p) =>
@@ -158,15 +196,23 @@ export default function Room() {
           </div>
         ))}
 
-        <h3 style={{ marginTop: 20 }}>Sospechosos</h3>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 20 }}>
+          <h3 style={{ margin: 0 }}>Sospechosos</h3>
+          <span className="budget-chip" title="Órdenes de registro disponibles para el equipo">
+            🔍 {state.searchBudget}
+          </span>
+        </div>
         <Suspects
           suspects={state.suspects}
           statusOf={statusOf}
+          searchedIds={state.searches.map((s) => s.suspect_id)}
+          searchBudget={state.searchBudget}
           onView={(s) => {
             const idx = state.evidence.findIndex((e) => e.image_path === s.mugshot_path);
             if (idx >= 0) setViewer({ list: state.evidence, index: idx });
           }}
           onStatus={(id, status) => socket.emit("board:set", { suspectId: id, status })}
+          onSearch={(id) => socket.emit("search:request", { suspectId: id })}
         />
       </div>
 
@@ -206,6 +252,7 @@ export default function Room() {
             youId={state.you.id}
             objectives={state.objectives}
             solved={state.room.solved === 1}
+            accusationLockUntil={state.accusationLockUntil}
             onVote={(suspectId) => socket.emit("vote", { suspectId })}
             onSubmit={(objectiveId, answer) => socket.emit("attempt", { objectiveId, answer })}
           />
@@ -216,8 +263,8 @@ export default function Room() {
       <div className="col right">
         <Hints
           hints={state.hints}
-          revealed={state.revealedHints}
-          onReveal={() => socket.emit("hint:reveal")}
+          unlockedHints={state.unlockedHints}
+          secondsToNextHint={state.secondsToNextHint}
         />
         <h3 style={{ marginTop: 18 }}>Cuaderno del equipo</h3>
         <Notes
@@ -235,6 +282,7 @@ export default function Room() {
           objectives={state.objectives}
           solved={state.room.solved === 1}
           verifyUrl={state.case.verify_url}
+          accusationLockUntil={state.accusationLockUntil}
           onSubmit={(objectiveId, answer) => socket.emit("attempt", { objectiveId, answer })}
         />
       )}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Suspect, Vote, Player, Objective } from "../types";
+import { useLockCountdown } from "../useLockCountdown";
 
 interface Props {
   suspects: Suspect[];
@@ -8,6 +9,7 @@ interface Props {
   youId: number;
   objectives: Objective[];
   solved: boolean;
+  accusationLockUntil: string | null;
   onVote: (suspectId: number) => void;
   onSubmit: (objectiveId: number, answer: string) => void;
 }
@@ -19,12 +21,19 @@ export default function VoteBox({
   youId,
   objectives,
   solved,
+  accusationLockUntil,
   onVote,
   onSubmit,
 }: Props) {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const myVote = votes.find((v) => v.player_id === youId)?.suspect_id;
   const online = players.filter((p) => p.online).length;
+  const lockLeft = useLockCountdown(accusationLockUntil);
+  const accusationId = objectives.reduce(
+    (min, o) => (o.position < (min?.position ?? Infinity) ? o : min),
+    undefined as Objective | undefined
+  )?.id;
+  const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   const countFor = (id: number) => votes.filter((v) => v.suspect_id === id).length;
   const votersFor = (id: number) =>
@@ -77,28 +86,38 @@ export default function VoteBox({
             <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0 }}>
               Cuando estén de acuerdo, respondan los objetivos. El acierto es del equipo.
             </p>
-            {objectives.map((o, i) => (
-              <div key={o.id} className="field">
-                <label>{o.prompt}</label>
-                <div className="row">
-                  <input
-                    style={{ flex: 1 }}
-                    value={answers[o.id] ?? (i === 0 && topSuspect?.n ? topSuspect.s.name : "")}
-                    onChange={(e) => setAnswers({ ...answers, [o.id]: e.target.value })}
-                    placeholder="Tu respuesta"
-                  />
-                  <button
-                    className="primary"
-                    onClick={() => {
-                      const a = answers[o.id] ?? (i === 0 && topSuspect?.n ? topSuspect.s.name : "");
-                      if (a.trim()) onSubmit(o.id, a.trim());
-                    }}
-                  >
-                    Enviar
-                  </button>
+            {lockLeft > 0 && (
+              <p style={{ color: "var(--danger)", fontSize: 13 }}>
+                ⛔ La acusación del culpable está bloqueada {mmss(lockLeft)} por una acusación
+                fallida. Sigan reuniendo pruebas.
+              </p>
+            )}
+            {objectives.map((o, i) => {
+              const blocked = o.id === accusationId && lockLeft > 0;
+              return (
+                <div key={o.id} className="field">
+                  <label>{o.prompt}</label>
+                  <div className="row">
+                    <input
+                      style={{ flex: 1 }}
+                      value={answers[o.id] ?? (i === 0 && topSuspect?.n ? topSuspect.s.name : "")}
+                      onChange={(e) => setAnswers({ ...answers, [o.id]: e.target.value })}
+                      placeholder="Tu respuesta"
+                    />
+                    <button
+                      className="primary"
+                      disabled={blocked}
+                      onClick={() => {
+                        const a = answers[o.id] ?? (i === 0 && topSuspect?.n ? topSuspect.s.name : "");
+                        if (a.trim() && !blocked) onSubmit(o.id, a.trim());
+                      }}
+                    >
+                      Enviar
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>
