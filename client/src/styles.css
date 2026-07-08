@@ -95,13 +95,14 @@ html { -webkit-text-size-adjust: 100%; }
 .room {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden; /* el scroll vive dentro de .panel */
 }
 
 /* Topbar fija arriba */
 .topbar {
-  position: sticky; top: 0; z-index: 30;
+  flex: 0 0 auto; z-index: 30;
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px;
   padding-top: calc(10px + env(safe-area-inset-top));
@@ -131,12 +132,13 @@ html { -webkit-text-size-adjust: 100%; }
 }
 .icon-btn:hover { color: var(--accent); border: none; }
 
-/* Panel de contenido: ocupa el alto, deja hueco para la barra inferior */
+/* Panel de contenido: ocupa el alto, deja hueco para la barra inferior.
+   min-height:0 permite que el hijo flex haga scroll en móvil. */
 .panel {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
   padding: 14px;
   padding-bottom: calc(78px + env(safe-area-inset-bottom));
 }
@@ -262,10 +264,23 @@ html { -webkit-text-size-adjust: 100%; }
 
 /* visor modal */
 .viewer {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.92);
   display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px;
+  overflow: hidden;
 }
-.viewer img { max-width: 100%; max-height: 82vh; box-shadow: 0 0 40px #000; border-radius: 4px; }
+.viewer-stage {
+  max-width: 100%; max-height: 82vh; display: flex; align-items: center; justify-content: center;
+  touch-action: none; /* capturamos pinch/pan nosotros */
+}
+.viewer img {
+  max-width: 100%; max-height: 82vh; box-shadow: 0 0 40px #000; border-radius: 4px;
+  will-change: transform; user-select: none; -webkit-user-select: none; -webkit-user-drag: none;
+}
+.viewer-caption {
+  position: absolute; bottom: calc(14px + env(safe-area-inset-bottom)); left: 0; right: 0;
+  text-align: center; color: #ccc; font-size: 13px; pointer-events: none; padding: 0 12px;
+}
+.viewer-hint { color: var(--muted); }
 .viewer .close {
   position: absolute; top: calc(10px + env(safe-area-inset-top)); right: 12px; z-index: 2;
   min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;
