@@ -134,13 +134,13 @@ Su trabajo, detectives, es reconstruir esos doce minutos a oscuras. Interroguen 
     },
     {
       name: "Jhuls",
-      role: "invitado",
+      role: "anfitrion",
       photo: "Jhuls.png",
       bio: "El anfitrión y bromista incorregible, el pegamento emocional del grupo. Calidez y carisma a raudales, sonrisa sincera, bigote y candado, y un tatuaje de símbolos de reproducción en el antebrazo. Es su casa. Casado con Daniela.",
     },
     {
       name: "Daniela",
-      role: "invitada",
+      role: "anfitriona",
       photo: "Daniela.png",
       bio: "Mente meticulosa y alma compasiva. Perceptiva y serena, nota las inconsistencias que otros pasan por alto e inspira confianza al instante. Esposa de Jhuls.",
     },

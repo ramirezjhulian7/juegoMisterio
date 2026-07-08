@@ -73,6 +73,12 @@ Certificado de necropsia del Instituto de Medicina Legal (en español) a nombre 
 ## 19. Reporte EPM — `reporte-epm.png`
 Documento oficial de EPM (Empresas Públicas de Medellín): "REPORTE DE INTERRUPCIÓN DEL SERVICIO — Circuito La Ceja". Tabla con: inicio de falla por descarga atmosférica 10:41 p.m.; RESTABLECIMIENTO DEL SERVICIO EN EL SECTOR 10:48 p.m. Gráfica de carga eléctrica. Nota al pie: "Cualquier interrupción posterior a esa hora en un predio individual corresponde a manipulación interna del tablero del inmueble". Aspecto de PDF corporativo real.
 
+## 20b. Registro a Jhuls: técnico eléctrico (evidencia OCULTA) — `registro-jhuls.png`
+Factura/reporte de un técnico electricista en español: "SERVICIO TÉCNICO ELÉCTRICO — Orden de trabajo". Describe una revisión del tablero de la casa de Jhuls días antes, con nota: "tablero principal con falla intermitente, riesgo de chispazo, se recomienda cambio". Sellos y firma. (Exculpa a Jhuls: su breaker fallaba de verdad.) Solo se revela al registrar a Jhuls.
+
+## 20c. Registro a Mauro: detalle de la llamada (evidencia OCULTA) — `registro-mauro.png`
+Captura/registro detallado de la operadora móvil en español: "DETALLE DE LLAMADAS — línea de Mauro". Una llamada saliente continua de 10:42 p.m. a 10:52 p.m. (10 minutos), resaltada. (Confirma la coartada de Mauro durante el apagón.) Solo se revela al registrar a Mauro.
+
 ## 20. Plano de la casa — `plano-casa.png`
 Plano arquitectónico sencillo de una casa de dos pisos, en español, dibujado a mano sobre papel cuadriculado: planta baja (sala, cocina, cuarto de servicio con TABLERO ELÉCTRICO, y CUARTO DE EQUIPOS/LAN), segundo piso (baño, habitaciones, balcón). Marcadas con una X las posiciones de cada persona durante el apagón. Estética de croquis de investigación.
 
@@ -96,6 +102,11 @@ Plano arquitectónico sencillo de una casa de dos pisos, en español, dibujado a
 - [ ] lab-vino.png
 - [ ] mesa-bebidas.png
 - [ ] documentos-beta.png
+- [ ] registro-jhuls.png
+- [ ] registro-mauro.png
 - [ ] necropsia.png
 - [ ] reporte-epm.png
 - [ ] plano-casa.png
+
+> Nota: las fotos de personajes (`personajes/*.png`) ya existen y se usan tal cual en la
+> presentación del elenco. No necesitas generarlas.

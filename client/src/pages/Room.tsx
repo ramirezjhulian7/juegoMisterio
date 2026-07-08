@@ -16,13 +16,13 @@ import Viewer from "../components/Viewer";
 import Suspects from "../components/Suspects";
 import Notes from "../components/Notes";
 import Gallery from "../components/Gallery";
-import SolveBar from "../components/SolveBar";
 import Timeline from "../components/Timeline";
 import Hints from "../components/Hints";
 import DeductionBoard from "../components/DeductionBoard";
 import VoteBox from "../components/VoteBox";
+import Icon from "../components/Icon";
 
-type Tab = "evidencias" | "timeline" | "deduccion" | "votacion";
+type Tab = "sospechosos" | "evidencias" | "timeline" | "deduccion" | "votacion";
 
 export default function Room() {
   const { code } = useParams();
@@ -30,8 +30,9 @@ export default function Room() {
   const [state, setState] = useState<RoomState | null>(null);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
-  const [tab, setTab] = useState<Tab>("evidencias");
+  const [tab, setTab] = useState<Tab>("sospechosos");
   const [viewer, setViewer] = useState<{ list: Evidence[]; index: number } | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
   // Fase de introducción: briefing -> cast -> juego
   const [intro, setIntro] = useState<"briefing" | "cast" | "done">("briefing");
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();

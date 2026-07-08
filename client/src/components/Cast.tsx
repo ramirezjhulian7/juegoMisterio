@@ -11,6 +11,8 @@ const ROLE_LABEL: Record<string, string> = {
   testigo: "Testigo",
   invitado: "Invitado",
   invitada: "Invitada",
+  anfitrion: "Anfitrión",
+  anfitriona: "Anfitriona",
 };
 
 /** Presentación del elenco del caso, tras el briefing. */
