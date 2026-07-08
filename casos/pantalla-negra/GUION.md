@@ -137,6 +137,15 @@ Con las dos trampas caídas (Jhuls y Zaida), el foco se mueve a las pistas sutil
   que los mensajes "raros" de Uber eran para organizar la **pedida de mano de Beta**.
 - **Maria** (esposa de Mauro): vio a **Beta manipular el rack a las 9:30** ("dijo que
   revisaba unos cables") y oyó la discusión previa por dinero entre Uber y los socios.
+- **Sebas** (músico, amigo de la casa): ⚠️ **TESTIGO POCO FIABLE — pieza de confusión.**
+  Se tomó una cerveza y **se quedó dormido en el sofá** justo antes del apagón. Su
+  declaración mezcla lo que soñó con lo que "vio": cree haber oído la guitarra sonar sola,
+  situar a gente en cuartos donde no estaba y confunde las horas. Sus afirmaciones
+  **contradicen** a otros testigos fiables — sirve para despistar, no para deducir. Nada
+  de lo que dice debe tomarse como hecho: si una teoría se apoya solo en Sebas, es falsa.
+- **Valeria** (amante de la cerveza, amiga de la casa): testigo de relleno. Estaba
+  disfrutando la fiesta y **no vio nada útil**: no recuerda detalles del momento del
+  apagón, solo habla de la cerveza y del ambiente. Su declaración no aporta ni quita.
 
 ---
 
@@ -171,6 +180,8 @@ Con las dos trampas caídas (Jhuls y Zaida), el foco se mueve a las pistas sutil
 | Daniela | Testigo | 30 | — | Esposa de Jhuls; coartada de Jhuls |
 | Camila | Testigo | 29 | — | Novia de Uber; ubica a Zaida en la sala |
 | Maria | Testigo | 33 | — | Esposa de Mauro; vio a Beta en el rack |
+| Sebas | Testigo (no fiable) | 30 | — | Músico; se durmió por la cerveza, confunde |
+| Valeria | Testigo (relleno) | 29 | — | Amante de la cerveza; no vio nada útil |
 
 ---
 

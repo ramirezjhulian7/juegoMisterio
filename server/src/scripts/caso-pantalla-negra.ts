@@ -46,6 +46,8 @@ Su trabajo, detectives, es reconstruir esos doce minutos a oscuras. Interroguen 
     { type: "witness", title: "Declaración de Zaida", file: "testigo-zaida.png" },
     { type: "witness", title: "Declaración de Camila", file: "testigo-camila.png" },
     { type: "witness", title: "Declaración de Maria", file: "testigo-maria.png" },
+    { type: "witness", title: "Declaración de Sebas", file: "testigo-sebas.png" },
+    { type: "witness", title: "Declaración de Valeria", file: "testigo-valeria.png" },
     { type: "call", title: "Chat: Uber ↔ Beta", file: "chat-uber.png" },
     { type: "call", title: "Mensajes de Zaida a Uber", file: "chat-zaida.png" },
     { type: "article", title: "Reporte de interrupción — EPM", file: "reporte-epm.png" },
@@ -161,6 +163,18 @@ Su trabajo, detectives, es reconstruir esos doce minutos a oscuras. Interroguen 
       role: "invitada",
       photo: "Camila.png",
       bio: "Energía positiva y mediadora del grupo. Su calidez desarma a cualquiera y esconde una aguda inteligencia emocional para leer las verdaderas intenciones de la gente. Novia de Uber.",
+    },
+    {
+      name: "Sebas",
+      role: "invitado",
+      photo: "Sebas.png",
+      bio: "El alma bohemia y músico del grupo. Oído agudo, mente creativa y espíritu pacificador. Rara vez se separa de su guitarra acústica y sus gafas redondas. Amigo de la casa.",
+    },
+    {
+      name: "Valeria",
+      role: "invitada",
+      photo: "Valeria.png",
+      bio: "Vibrante, extrovertida y amante de la buena cerveza. Ilumina cualquier reunión y conoce todos los rincones de la noche. Vestido esmeralda y sonrisa radiante. Amiga de la casa.",
     },
   ],
 };

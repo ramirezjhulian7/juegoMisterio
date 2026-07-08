@@ -49,6 +49,12 @@ Misma plantilla de declaración. Narrativa de una mujer (Camila, novia de la ví
 ## 11. Declaración de MARIA — `testigo-maria.png`
 Misma plantilla. Narrativa de una mujer (Maria): cuenta que "hacia las 9:30 vi a Beta trasteando los cables del rack de computadores, dijo que los estaba revisando" y que hubo una discusión por dinero entre Uber y los socios esa semana. Retrato pequeño de mujer de cabello castaño oscuro largo y lacio con raya al medio, gafas doradas estilo aviador.
 
+## 11b. Declaración de SEBAS (testigo NO fiable) — `testigo-sebas.png`
+Misma plantilla de declaración. Narrativa de un hombre (Sebas, músico) confusa y contradictoria: admite que "me tomé una cerveza y me quedé dormido en el sofá, no sé bien a qué hora". Mezcla sueño y realidad: dice cosas como "juraría que oí mi guitarra sonar sola en la oscuridad", "creo que vi a alguien en la cocina... ¿o era el baño?", y confunde las horas. Nota del investigador al margen: "testigo se durmió; declaración poco fiable". Retrato pequeño de hombre joven con cabello oscuro despeinado, barba corta y bigote, gafas redondas de montura metálica delgada.
+
+## 11c. Declaración de VALERIA (testigo de relleno) — `testigo-valeria.png`
+Misma plantilla de declaración. Narrativa breve de una mujer (Valeria) que no aporta nada: estaba disfrutando la fiesta y una buena cerveza artesanal, no recuerda detalles del apagón, solo comenta el ambiente y lo bien que la estaban pasando. "La verdad, con la música y la charla no me di cuenta de nada raro." Retrato pequeño de mujer de cabello largo liso castaño claro, gafas redondas de montura metálica delgada, pendientes dorados grandes.
+
 ## 12. Chat Uber ↔ Beta — `chat-uber.png`
 Captura de pantalla de conversación de WhatsApp en español, el domingo por la tarde, entre contactos "Uber" y "Beta". Mensaje de Uber: "Esta noche hablamos, Beta. Zaida merece saber la verdad. No te voy a dejar seguir mintiéndole 😕". Doble check azul, hora 4:15 p.m. Interfaz de celular realista.
 
@@ -96,6 +102,8 @@ Plano arquitectónico sencillo de una casa de dos pisos, en español, dibujado a
 - [ ] testigo-zaida.png
 - [ ] testigo-camila.png
 - [ ] testigo-maria.png
+- [ ] testigo-sebas.png
+- [ ] testigo-valeria.png
 - [ ] chat-uber.png
 - [ ] chat-zaida.png
 - [ ] huellas-ups.png
