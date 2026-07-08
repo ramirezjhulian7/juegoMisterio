@@ -22,19 +22,24 @@ export function registerSockets(io: Server): void {
   io.on("connection", (socket: Socket) => {
     const data = socket.data as SocketData;
 
-    socket.on("room:join", ({ code, name }: { code: string; name: string }) => {
+    socket.on(
+      "room:join",
+      ({ code, name, clientId }: { code: string; name: string; clientId?: string }) => {
       const room = repo.getRoomByCode(String(code ?? ""));
       if (!room) {
         socket.emit("error:msg", "Sala no encontrada.");
         return;
       }
+      const cid = String(clientId ?? "");
       const players = repo.getPlayers(room.id);
-      if (players.length >= room.max_players) {
+      const alreadyIn = cid && players.some((p) => p.client_id === cid);
+      // El límite solo aplica a jugadores nuevos (reconectar no cuenta).
+      if (!alreadyIn && players.length >= room.max_players) {
         socket.emit("error:msg", `La sala esta llena (max ${room.max_players}).`);
         return;
       }
 
-      const player = repo.addPlayer(room.id, String(name ?? "Detective").slice(0, 30));
+      const player = repo.joinPlayer(room.id, cid, String(name ?? "Detective").slice(0, 30));
       data.roomId = room.id;
       data.playerId = player.id;
       data.roomCode = room.code;
@@ -44,7 +49,8 @@ export function registerSockets(io: Server): void {
       socket.emit("room:state", { ...repo.getRoomState(room), you: player });
       // Aviso al resto
       io.to(roomChannel(room.id)).emit("players:update", repo.getPlayers(room.id));
-    });
+      }
+    );
 
     socket.on(
       "note:add",

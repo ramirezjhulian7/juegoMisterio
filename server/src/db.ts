@@ -100,10 +100,12 @@ export function initSchema(): void {
     CREATE TABLE IF NOT EXISTS players (
       id        INTEGER PRIMARY KEY AUTOINCREMENT,
       room_id   INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+      client_id TEXT,                -- identidad persistente del navegador (localStorage)
       name      TEXT NOT NULL,
       color     TEXT NOT NULL,
       online    INTEGER NOT NULL DEFAULT 1,
-      joined_at TEXT NOT NULL DEFAULT (datetime('now'))
+      joined_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (room_id, client_id)
     );
 
     CREATE TABLE IF NOT EXISTS notes (

@@ -86,12 +86,28 @@ export function getPlayers(roomId: number): Player[] {
     .prepare("SELECT * FROM players WHERE room_id = ? ORDER BY joined_at")
     .all(roomId) as Player[];
 }
-export function addPlayer(roomId: number, name: string): Player {
-  const existing = getPlayers(roomId);
-  const color = PLAYER_COLORS[existing.length % PLAYER_COLORS.length];
+/**
+ * Une un jugador a la sala. Si el navegador (client_id) ya tenía un jugador en
+ * esta sala, lo reutiliza (evita duplicados al recargar/reconectar o por
+ * StrictMode). Si no, crea uno nuevo con color asignado.
+ */
+export function joinPlayer(roomId: number, clientId: string, name: string): Player {
+  if (clientId) {
+    const existing = db
+      .prepare("SELECT * FROM players WHERE room_id = ? AND client_id = ?")
+      .get(roomId, clientId) as Player | undefined;
+    if (existing) {
+      db.prepare("UPDATE players SET online = 1, name = ? WHERE id = ?").run(name, existing.id);
+      return db.prepare("SELECT * FROM players WHERE id = ?").get(existing.id) as Player;
+    }
+  }
+  const count = (
+    db.prepare("SELECT COUNT(*) AS n FROM players WHERE room_id = ?").get(roomId) as { n: number }
+  ).n;
+  const color = PLAYER_COLORS[count % PLAYER_COLORS.length];
   const info = db
-    .prepare("INSERT INTO players (room_id, name, color, online) VALUES (?, ?, ?, 1)")
-    .run(roomId, name, color);
+    .prepare("INSERT INTO players (room_id, client_id, name, color, online) VALUES (?, ?, ?, ?, 1)")
+    .run(roomId, clientId || null, name, color);
   return db.prepare("SELECT * FROM players WHERE id = ?").get(info.lastInsertRowid) as Player;
 }
 export function getPlayer(id: number): Player | undefined {
