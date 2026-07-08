@@ -1,4 +1,5 @@
 import type { Suspect, SuspectStatus } from "../types";
+import Icon from "./Icon";
 
 interface Props {
   suspects: Suspect[];
@@ -31,7 +32,7 @@ export default function Suspects({
   const searched = new Set(searchedIds);
 
   return (
-    <>
+    <div className="suspects-grid">
       {suspects.map((s) => {
         const status = statusOf(s.id);
         const isSearched = searched.has(s.id);
@@ -53,7 +54,9 @@ export default function Suspects({
               ))}
             </div>
             {isSearched ? (
-              <div className="searched-tag">✓ Registrado</div>
+              <div className="searched-tag">
+                <Icon name="check" size={14} /> Registrado
+              </div>
             ) : (
               <button
                 className="search-btn"
@@ -72,12 +75,12 @@ export default function Suspects({
                     onSearch(s.id);
                 }}
               >
-                🔍 Solicitar registro
+                <Icon name="search" size={15} /> Registrar
               </button>
             )}
           </div>
         );
       })}
-    </>
+    </div>
   );
 }

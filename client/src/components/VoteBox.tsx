@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Suspect, Vote, Player, Objective } from "../types";
 import { useLockCountdown } from "../useLockCountdown";
+import Icon from "./Icon";
 
 interface Props {
   suspects: Suspect[];
@@ -48,7 +49,9 @@ export default function VoteBox({
 
   return (
     <div className="votebox">
-      <h3>🗳️ ¿Quién creen que fue?</h3>
+      <h3 style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <Icon name="vote" size={18} /> ¿Quién creen que fue?
+      </h3>
       <p style={{ color: "var(--muted)", fontSize: 13 }}>
         {votes.length} de {online} detectives en línea han votado.
       </p>

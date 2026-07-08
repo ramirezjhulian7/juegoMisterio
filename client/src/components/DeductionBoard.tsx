@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Suspect, Evidence, Deduction, Player } from "../types";
+import Icon from "./Icon";
 
 interface Props {
   suspects: Suspect[];
@@ -45,32 +46,35 @@ export default function DeductionBoard({
       </p>
 
       <div className="deduction-form card">
-        <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
-          <div className="field" style={{ flex: 1, minWidth: 130, marginBottom: 0 }}>
-            <label>Sospechoso</label>
-            <select value={suspectId ?? ""} onChange={(e) => setSuspectId(Number(e.target.value))}>
-              {suspects.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field" style={{ flex: 1, minWidth: 130, marginBottom: 0 }}>
-            <label>Evidencia</label>
-            <select value={evidenceId ?? ""} onChange={(e) => setEvidenceId(Number(e.target.value))}>
-              <option value="">— elige —</option>
-              {evidence.map((ev) => (
-                <option key={ev.id} value={ev.id}>{ev.title}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field" style={{ flex: 2, minWidth: 160, marginBottom: 0 }}>
-            <label>¿Por qué conecta? (opcional)</label>
-            <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ej. contradice su coartada" />
-          </div>
-          <button className="primary" onClick={connect} disabled={!suspectId || !evidenceId}>
-            🔗 Conectar
-          </button>
+        <div className="field">
+          <label>Sospechoso</label>
+          <select value={suspectId ?? ""} onChange={(e) => setSuspectId(Number(e.target.value))}>
+            {suspects.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
         </div>
+        <div className="field">
+          <label>Evidencia</label>
+          <select value={evidenceId ?? ""} onChange={(e) => setEvidenceId(Number(e.target.value))}>
+            <option value="">— elige —</option>
+            {evidence.map((ev) => (
+              <option key={ev.id} value={ev.id}>{ev.title}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label>¿Por qué conecta? (opcional)</label>
+          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ej. contradice su coartada" />
+        </div>
+        <button
+          className="primary"
+          style={{ width: "100%", minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+          onClick={connect}
+          disabled={!suspectId || !evidenceId}
+        >
+          <Icon name="puzzle" size={16} /> Conectar
+        </button>
       </div>
 
       <div className="deduction-grid">
@@ -87,7 +91,7 @@ export default function DeductionBoard({
               {links.map((d) => (
                 <div key={d.id} className="deduction-link">
                   <div className="dl-ev" onClick={() => onView(evIndex(d.evidence_id))}>
-                    🔗 {evName(d.evidence_id)}
+                    {evName(d.evidence_id)}
                   </div>
                   {d.label && <div className="dl-label">“{d.label}”</div>}
                   <div className="dl-meta">

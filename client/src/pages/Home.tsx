@@ -50,7 +50,7 @@ export default function Home() {
 
   return (
     <div className="home">
-      <h1>🕵️ Expedientes sin Resolver</h1>
+      <h1>Expedientes sin Resolver</h1>
       <p className="sub">Resuelvan el misterio juntos, en tiempo real.</p>
 
       <div className="field" style={{ maxWidth: 320 }}>

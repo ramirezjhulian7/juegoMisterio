@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { Evidence } from "../types";
+import Icon from "./Icon";
 
 interface Props {
   list: Evidence[];
@@ -36,18 +37,24 @@ export default function Viewer({ list, index, onIndex, onClose }: Props) {
 
   return (
     <div className="viewer" onClick={onClose}>
-      <button className="close" onClick={onClose}>✕</button>
+      <button className="close" aria-label="Cerrar" onClick={onClose}>
+        <Icon name="close" size={26} />
+      </button>
       {index > 0 && (
-        <button className="nav prev" onClick={(e) => { e.stopPropagation(); onIndex(index - 1); }}>‹</button>
+        <button className="nav prev" aria-label="Anterior" onClick={(e) => { e.stopPropagation(); onIndex(index - 1); }}>
+          <Icon name="chevron-left" size={32} />
+        </button>
       )}
       <div onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>
         <img src={`/uploads/${ev.image_path}`} alt={ev.title} />
-        <div style={{ color: "#ccc", marginTop: 10, fontSize: 13 }}>
+        <div style={{ color: "#ccc", marginTop: 10, fontSize: 14 }}>
           {TYPE_LABEL[ev.type] ?? ev.type} · {index + 1} / {list.length}
         </div>
       </div>
       {index < list.length - 1 && (
-        <button className="nav next" onClick={(e) => { e.stopPropagation(); onIndex(index + 1); }}>›</button>
+        <button className="nav next" aria-label="Siguiente" onClick={(e) => { e.stopPropagation(); onIndex(index + 1); }}>
+          <Icon name="chevron-right" size={32} />
+        </button>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Hint } from "../types";
+import Icon from "./Icon";
 
 interface Props {
   hints: Hint[]; // ya vienen recortadas al nº desbloqueado
@@ -28,7 +29,7 @@ export default function Hints({ hints, unlockedHints, secondsToNextHint }: Props
 
   return (
     <div className="hints">
-      <h3>💡 Pistas ({unlockedHints})</h3>
+      <h3><Icon name="bulb" size={16} /> Pistas ({unlockedHints})</h3>
       {hints.length === 0 && (
         <p style={{ color: "var(--muted)", fontSize: 13 }}>
           Las pistas se desbloquean solas con el tiempo. Investiguen mientras tanto.

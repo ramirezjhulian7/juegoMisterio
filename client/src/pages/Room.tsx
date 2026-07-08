@@ -162,75 +162,95 @@ export default function Room() {
   const statusOf = (id: number): SuspectStatus =>
     (state.board.find((b) => b.suspect_id === id)?.status ?? "unknown") as SuspectStatus;
 
-  const TABS: { key: Tab; label: string }[] = [
-    { key: "evidencias", label: "🗂️ Evidencias" },
-    { key: "timeline", label: "🕒 Línea de tiempo" },
-    { key: "deduccion", label: "🧩 Deducción" },
-    { key: "votacion", label: "🗳️ Votación" },
+  const onlineCount = state.players.filter((p) => p.online).length;
+  const NAV: { key: Tab; label: string; icon: Parameters<typeof Icon>[0]["name"]; badge?: number }[] = [
+    { key: "sospechosos", label: "Sospechosos", icon: "users" },
+    { key: "evidencias", label: "Pruebas", icon: "files", badge: state.evidence.length },
+    { key: "timeline", label: "Tiempo", icon: "clock" },
+    { key: "deduccion", label: "Deducción", icon: "puzzle", badge: state.deductions.length || undefined },
+    { key: "votacion", label: "Resolver", icon: "vote" },
   ];
+  const TAB_TITLE: Record<Tab, string> = {
+    sospechosos: "Sospechosos",
+    evidencias: "Expediente de pruebas",
+    timeline: "Línea de tiempo",
+    deduccion: "Tablero de deducción",
+    votacion: "Resolver el caso",
+  };
 
   return (
     <div className="room">
-      <div className="topbar">
-        <span style={{ fontSize: 20 }}>🕵️</span>
-        <div>
-          <div style={{ fontWeight: 600 }}>{state.case.title}</div>
-          <div className="obj">{state.case.objective}</div>
-        </div>
-        <div className="spacer" />
-        {state.room.solved === 1 && <span className="solved-badge">CASO RESUELTO</span>}
-        <div>
-          <div style={{ fontSize: 11, color: "var(--muted)" }}>CÓDIGO</div>
-          <div className="code">{state.room.code}</div>
-        </div>
-        <button onClick={() => { navigator.clipboard?.writeText(state.room.code); flash("Código copiado"); }}>
-          Copiar
-        </button>
-        <button onClick={() => nav("/")}>Salir</button>
-      </div>
-
-      {/* Izquierda: jugadores + sospechosos */}
-      <div className="col left">
-        <h3>Detectives ({state.players.filter((p) => p.online).length} en línea)</h3>
-        {state.players.map((p) => (
-          <div key={p.id} className={"player-chip" + (p.online ? "" : " offline")}>
-            <span className="dot" style={{ background: p.color }} />
-            <span>{p.name}{p.id === state.you.id ? " (tú)" : ""}</span>
-          </div>
-        ))}
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 20 }}>
-          <h3 style={{ margin: 0 }}>Sospechosos</h3>
-          <span className="budget-chip" title="Órdenes de registro disponibles para el equipo">
-            🔍 {state.searchBudget}
-          </span>
-        </div>
-        <Suspects
-          suspects={state.suspects}
-          statusOf={statusOf}
-          searchedIds={state.searches.map((s) => s.suspect_id)}
-          searchBudget={state.searchBudget}
-          onView={(s) => {
-            const idx = state.evidence.findIndex((e) => e.image_path === s.mugshot_path);
-            if (idx >= 0) setViewer({ list: state.evidence, index: idx });
-          }}
-          onStatus={(id, status) => socket.emit("board:set", { suspectId: id, status })}
-          onSearch={(id) => socket.emit("search:request", { suspectId: id })}
-        />
-      </div>
-
-      {/* Centro: pestañas */}
-      <div className="col center">
-        <div className="tabs">
-          {TABS.map((t) => (
-            <button key={t.key} className={tab === t.key ? "on" : ""} onClick={() => setTab(t.key)}>
-              {t.label}
+      <header className="topbar">
+        <span className="topbar-logo"><Icon name="detective" /></span>
+        <div className="topbar-title">
+          <div className="t">{state.case.title}</div>
+          <div className="code-row">
+            <span className="code">{state.room.code}</span>
+            <button
+              className="icon-btn"
+              aria-label="Copiar código de sala"
+              onClick={() => { navigator.clipboard?.writeText(state.room.code); flash("Código copiado"); }}
+            >
+              <Icon name="copy" size={18} />
             </button>
-          ))}
+          </div>
         </div>
+        <div className="topbar-right">
+          {state.room.solved === 1 && <span className="solved-badge">RESUELTO</span>}
+          <span className="online-pill" title="Detectives en línea">
+            <Icon name="users" size={16} /> {onlineCount}
+          </span>
+          <button className="icon-btn" aria-label="Salir de la sala" onClick={() => nav("/")}>
+            <Icon name="exit" size={20} />
+          </button>
+        </div>
+      </header>
+
+      <main className="panel">
+        <div className="panel-head">
+          <h2>{TAB_TITLE[tab]}</h2>
+          {tab === "sospechosos" && (
+            <span className="budget-chip" title="Órdenes de registro del equipo">
+              <Icon name="search" size={14} /> {state.searchBudget} registros
+            </span>
+          )}
+        </div>
+
+        {tab === "sospechosos" && (
+          <>
+            <Suspects
+              suspects={state.suspects}
+              statusOf={statusOf}
+              searchedIds={state.searches.map((s) => s.suspect_id)}
+              searchBudget={state.searchBudget}
+              onView={(s) => {
+                const idx = state.evidence.findIndex((e) => e.image_path === s.mugshot_path);
+                if (idx >= 0) setViewer({ list: state.evidence, index: idx });
+              }}
+              onStatus={(id, status) => socket.emit("board:set", { suspectId: id, status })}
+              onSearch={(id) => socket.emit("search:request", { suspectId: id })}
+            />
+            <h3 className="panel-subhead"><Icon name="users" size={16} /> Detectives ({onlineCount})</h3>
+            <div className="players-wrap">
+              {state.players.map((p) => (
+                <div key={p.id} className={"player-chip" + (p.online ? "" : " offline")}>
+                  <span className="dot" style={{ background: p.color }} />
+                  <span>{p.name}{p.id === state.you.id ? " (tú)" : ""}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {tab === "evidencias" && (
-          <Gallery evidence={state.evidence} onOpen={(i) => setViewer({ list: state.evidence, index: i })} />
+          <>
+            <Hints
+              hints={state.hints}
+              unlockedHints={state.unlockedHints}
+              secondsToNextHint={state.secondsToNextHint}
+            />
+            <Gallery evidence={state.evidence} onOpen={(i) => setViewer({ list: state.evidence, index: i })} />
+          </>
         )}
         {tab === "timeline" && <Timeline events={state.timeline} />}
         {tab === "deduccion" && (
@@ -260,34 +280,56 @@ export default function Room() {
             onSubmit={(objectiveId, answer) => socket.emit("attempt", { objectiveId, answer })}
           />
         )}
-      </div>
+      </main>
 
-      {/* Derecha: pistas + notas */}
-      <div className="col right">
-        <Hints
-          hints={state.hints}
-          unlockedHints={state.unlockedHints}
-          secondsToNextHint={state.secondsToNextHint}
-        />
-        <h3 style={{ marginTop: 18 }}>Cuaderno del equipo</h3>
-        <Notes
-          notes={state.notes}
-          players={state.players}
-          youId={state.you.id}
-          onAdd={(text) => socket.emit("note:add", { text })}
-          onDelete={(noteId) => socket.emit("note:delete", { noteId })}
-        />
-      </div>
+      {/* Navegación inferior (alcance del pulgar en portrait) */}
+      <nav className="bottom-nav">
+        {NAV.map((n) => (
+          <button
+            key={n.key}
+            className={"nav-btn" + (tab === n.key ? " on" : "")}
+            onClick={() => setTab(n.key)}
+            aria-label={n.label}
+            aria-current={tab === n.key}
+          >
+            <span className="nav-icon">
+              <Icon name={n.icon} size={22} />
+              {n.badge ? <span className="nav-badge">{n.badge}</span> : null}
+            </span>
+            <span className="nav-label">{n.label}</span>
+          </button>
+        ))}
+      </nav>
 
-      {/* SolveBar flotante siempre visible salvo en votación (que ya lo incluye) */}
-      {tab !== "votacion" && (
-        <SolveBar
-          objectives={state.objectives}
-          solved={state.room.solved === 1}
-          verifyUrl={state.case.verify_url}
-          accusationLockUntil={state.accusationLockUntil}
-          onSubmit={(objectiveId, answer) => socket.emit("attempt", { objectiveId, answer })}
-        />
+      {/* Botón flotante del cuaderno + hoja inferior de notas */}
+      <button
+        className="notes-fab"
+        aria-label="Abrir cuaderno del equipo"
+        onClick={() => setNotesOpen(true)}
+      >
+        <Icon name="notebook" size={24} />
+        {state.notes.length > 0 && <span className="fab-badge">{state.notes.length}</span>}
+      </button>
+
+      {notesOpen && (
+        <div className="sheet-backdrop" onClick={() => setNotesOpen(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div className="sheet-head">
+              <h3><Icon name="notebook" size={18} /> Cuaderno del equipo</h3>
+              <button className="icon-btn" aria-label="Cerrar cuaderno" onClick={() => setNotesOpen(false)}>
+                <Icon name="close" size={20} />
+              </button>
+            </div>
+            <Notes
+              notes={state.notes}
+              players={state.players}
+              youId={state.you.id}
+              onAdd={(text) => socket.emit("note:add", { text })}
+              onDelete={(noteId) => socket.emit("note:delete", { noteId })}
+            />
+          </div>
+        </div>
       )}
 
       {intro === "briefing" && state.case.briefing && (
