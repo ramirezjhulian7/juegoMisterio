@@ -9,6 +9,7 @@ let insObjective: ReturnType<typeof db.prepare>;
 let insSuspect: ReturnType<typeof db.prepare>;
 let insTimeline: ReturnType<typeof db.prepare>;
 let insHint: ReturnType<typeof db.prepare>;
+let insCharacter: ReturnType<typeof db.prepare>;
 
 function prepareStatements(): void {
   insCase = db.prepare(
@@ -33,6 +34,10 @@ function prepareStatements(): void {
   );
   insHint = db.prepare(
     `INSERT INTO hints (case_id, text, position) VALUES (@case_id, @text, @position)`
+  );
+  insCharacter = db.prepare(
+    `INSERT INTO characters (case_id, name, role, photo_path, bio, position)
+     VALUES (@case_id, @name, @role, @photo_path, @bio, @position)`
   );
 }
 
@@ -99,9 +104,21 @@ function loadPantallaNegra(): void {
     insHint.run({ case_id: caseId, text: h, position: i });
   });
 
+  c.characters.forEach((ch, i) => {
+    insCharacter.run({
+      case_id: caseId,
+      name: ch.name,
+      role: ch.role,
+      photo_path: `personajes/${ch.photo}`,
+      bio: ch.bio,
+      position: i,
+    });
+  });
+
   console.log(
     `[ok] ${c.slug}: ${c.evidence.length} evidencias, ${c.suspects.length} sospechosos, ` +
-      `${c.objectives.length} objetivos, ${c.timeline.length} hitos, ${c.hints.length} pistas`
+      `${c.objectives.length} objetivos, ${c.timeline.length} hitos, ${c.hints.length} pistas, ` +
+      `${c.characters.length} personajes`
   );
 
   // Genera imagenes de marcador para lo que falte

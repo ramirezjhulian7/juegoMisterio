@@ -109,4 +109,58 @@ Su trabajo, detectives, es reconstruir esos doce minutos a oscuras. Interroguen 
     "El arma no apareció sola en el cuarto. ¿Quién tuvo la oportunidad de dejarla lista antes del apagón?",
     "Todo crimen tiene un móvil. ¿Quién tenía algo que perder si Uber hablaba esa noche?",
   ],
+
+  // ---- Elenco: presentación de personajes tras el briefing.
+  //      photo apunta a uploads/personajes/<archivo>. Roles neutrales para no
+  //      delatar quién es sospechoso: todos los invitados figuran como "invitado".
+  characters: [
+    {
+      name: "Uberney \"Uber\"",
+      role: "victima",
+      photo: "Uberney.png",
+      bio: "La víctima. Conductor de aplicación y alma de la fiesta: te hace sentir que lo conoces de toda la vida en cinco minutos. Empático, bromista y leal, era el amigo al que todos le contaban sus secretos... quizá demasiados.",
+    },
+    {
+      name: "Mauro",
+      role: "invitado",
+      photo: "Mauro.png",
+      bio: "El más alto del grupo y completamente calvo, una figura imponente de autoridad tranquila. Serio y analítico, es la voz de la razón y el pilar del grupo cuando las cosas se complican. Casado con Maria.",
+    },
+    {
+      name: "Beta",
+      role: "invitado",
+      photo: "Beta.png",
+      bio: "El enigma del grupo. De pocas palabras, prefiere observar antes de actuar; siempre parece ir un paso por delante y guardar un secreto bajo la manga. Aire urbano, quijada marcada y chaqueta de cuero. Novio de Zaida.",
+    },
+    {
+      name: "Jhuls",
+      role: "invitado",
+      photo: "Jhuls.png",
+      bio: "El anfitrión y bromista incorregible, el pegamento emocional del grupo. Calidez y carisma a raudales, sonrisa sincera, bigote y candado, y un tatuaje de símbolos de reproducción en el antebrazo. Es su casa. Casado con Daniela.",
+    },
+    {
+      name: "Daniela",
+      role: "invitada",
+      photo: "Daniela.png",
+      bio: "Mente meticulosa y alma compasiva. Perceptiva y serena, nota las inconsistencias que otros pasan por alto e inspira confianza al instante. Esposa de Jhuls.",
+    },
+    {
+      name: "Maria",
+      role: "invitada",
+      photo: "Maria.png",
+      bio: "Intrépida y adaptable, con un carisma que le abre cualquier puerta. Observadora e ingeniosa, se integra en cualquier ambiente sin levantar sospechas. Esposa de Mauro.",
+    },
+    {
+      name: "Zaida",
+      role: "invitada",
+      photo: "Zaida.png",
+      bio: "La chispa creativa: pensamiento lateral y un aire de excentricidad artística. Cabello rojo carmesí y gafas de montura gruesa; descifra patrones y mensajes ocultos que otros descartan. Novia de Beta.",
+    },
+    {
+      name: "Camila",
+      role: "invitada",
+      photo: "Camila.png",
+      bio: "Energía positiva y mediadora del grupo. Su calidez desarma a cualquiera y esconde una aguda inteligencia emocional para leer las verdaderas intenciones de la gente. Novia de Uber.",
+    },
+  ],
 };

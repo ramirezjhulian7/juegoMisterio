@@ -49,6 +49,11 @@ export function getTimeline(caseId: number) {
 export function getHints(caseId: number) {
   return db.prepare("SELECT * FROM hints WHERE case_id = ? ORDER BY position").all(caseId);
 }
+export function getCharacters(caseId: number) {
+  return db
+    .prepare("SELECT * FROM characters WHERE case_id = ? ORDER BY position")
+    .all(caseId);
+}
 
 // ===== Salas =====
 export function createRoom(caseId: number, hostName: string, maxPlayers = 15): Room {
@@ -320,6 +325,7 @@ export function getRoomState(room: Room) {
     suspects: getSuspects(room.case_id),
     objectives: getObjectives(room.case_id),
     timeline: getTimeline(room.case_id),
+    characters: getCharacters(room.case_id),
     hints: getHints(room.case_id).slice(0, unlockedHintCount(room, room.case_id)),
     players: getPlayers(room.id),
     notes: getNotes(room.id),

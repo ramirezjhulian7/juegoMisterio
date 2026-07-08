@@ -11,6 +11,7 @@ import type {
   Vote,
 } from "../types";
 import Briefing from "../components/Briefing";
+import Cast from "../components/Cast";
 import Viewer from "../components/Viewer";
 import Suspects from "../components/Suspects";
 import Notes from "../components/Notes";
@@ -31,7 +32,8 @@ export default function Room() {
   const [toast, setToast] = useState("");
   const [tab, setTab] = useState<Tab>("evidencias");
   const [viewer, setViewer] = useState<{ list: Evidence[]; index: number } | null>(null);
-  const [showBriefing, setShowBriefing] = useState(true);
+  // Fase de introducción: briefing -> cast -> juego
+  const [intro, setIntro] = useState<"briefing" | "cast" | "done">("briefing");
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
 
   function flash(msg: string) {
@@ -287,13 +289,16 @@ export default function Room() {
         />
       )}
 
-      {showBriefing && state.case.briefing && (
+      {intro === "briefing" && state.case.briefing && (
         <Briefing
           title={state.case.title}
           caseNumber={state.case.case_number}
           briefing={state.case.briefing}
-          onClose={() => setShowBriefing(false)}
+          onClose={() => setIntro(state.characters.length ? "cast" : "done")}
         />
+      )}
+      {intro === "cast" && (
+        <Cast characters={state.characters} onClose={() => setIntro("done")} />
       )}
 
       {viewer && (

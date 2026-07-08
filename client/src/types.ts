@@ -80,6 +80,16 @@ export interface Hint {
   position: number;
 }
 
+export interface Character {
+  id: number;
+  case_id: number;
+  name: string;
+  role: string;
+  photo_path: string | null;
+  bio: string | null;
+  position: number;
+}
+
 export interface Deduction {
   id: number;
   room_id: number;
@@ -102,6 +112,7 @@ export interface RoomState {
   suspects: Suspect[];
   objectives: Objective[];
   timeline: TimelineEvent[];
+  characters: Character[];
   hints: Hint[];
   players: Player[];
   notes: Note[];

@@ -72,6 +72,17 @@ export function initSchema(): void {
       details      TEXT               -- JSON con datos de la ficha
     );
 
+    -- Elenco del caso: presentación de personajes tras el briefing
+    CREATE TABLE IF NOT EXISTS characters (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      case_id    INTEGER NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+      name       TEXT NOT NULL,
+      role       TEXT NOT NULL,       -- victima | sospechoso | testigo
+      photo_path TEXT,
+      bio        TEXT,
+      position   INTEGER NOT NULL DEFAULT 0
+    );
+
     -- ===== Partidas en tiempo real =====
     CREATE TABLE IF NOT EXISTS rooms (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
