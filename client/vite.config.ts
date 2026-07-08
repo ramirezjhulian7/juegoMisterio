@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    host: true, // escucha en 0.0.0.0 para que los móviles de la LAN entren
     proxy: {
       "/api": "http://localhost:4000",
       "/uploads": "http://localhost:4000",

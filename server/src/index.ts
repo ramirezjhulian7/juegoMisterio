@@ -4,9 +4,10 @@ import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { networkInterfaces } from "node:os";
 import { initSchema } from "./db.js";
 import * as repo from "./repo.js";
-import { registerSockets } from "./sockets.js";
+import { registerSockets, startHintTimer } from "./sockets.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 4000;
@@ -59,7 +60,25 @@ app.get("/api/rooms/:code", (req, res) => {
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: "*" } });
 registerSockets(io);
+startHintTimer(io);
 
-httpServer.listen(PORT, () => {
-  console.log(`\n🕵️  Servidor de misterios en http://localhost:${PORT}\n`);
+// Escucha en 0.0.0.0 para que los móviles de la LAN puedan conectarse.
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`\n🕵️  Servidor de misterios escuchando en el puerto ${PORT}`);
+  const ips = localIPs();
+  console.log(`   Local:   http://localhost:${PORT}`);
+  for (const ip of ips) console.log(`   LAN:     http://${ip}:${PORT}`);
+  console.log("");
 });
+
+/** Direcciones IPv4 no internas (para conectarse desde la LAN). */
+function localIPs(): string[] {
+  const nets = networkInterfaces();
+  const out: string[] = [];
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] ?? []) {
+      if (net.family === "IPv4" && !net.internal) out.push(net.address);
+    }
+  }
+  return out;
+}
