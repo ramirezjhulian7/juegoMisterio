@@ -81,6 +81,8 @@ export function initSchema(): void {
       max_players   INTEGER NOT NULL DEFAULT 15,
       search_budget INTEGER NOT NULL DEFAULT 2,   -- órdenes de registro disponibles para el equipo
       solved        INTEGER NOT NULL DEFAULT 0,
+      wrong_accusations INTEGER NOT NULL DEFAULT 0,  -- acusaciones falladas (para el marcador)
+      accusation_lock_until TEXT,                    -- ISO: hasta cuándo no se puede volver a acusar
       created_at    TEXT NOT NULL DEFAULT (datetime('now'))
     );
 

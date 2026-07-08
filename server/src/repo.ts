@@ -237,6 +237,37 @@ export function requestSearch(
   return { ok: true, budgetLeft: room.search_budget - 1 };
 }
 
+// ===== Acusaciones (objetivo del culpable) =====
+export const ACCUSATION_LOCK_MS = 5 * 60 * 1000; // 5 min de bloqueo tras fallar
+
+/** ISO hasta cuándo la acusación está bloqueada, o null si está libre. */
+export function accusationLockUntil(roomId: number): string | null {
+  const r = db
+    .prepare("SELECT accusation_lock_until FROM rooms WHERE id = ?")
+    .get(roomId) as { accusation_lock_until: string | null } | undefined;
+  if (!r?.accusation_lock_until) return null;
+  const until = Date.parse(r.accusation_lock_until);
+  return Number.isNaN(until) || until <= Date.now() ? null : r.accusation_lock_until;
+}
+/** Segundos restantes de bloqueo de acusación (0 si libre). */
+export function accusationLockSeconds(roomId: number): number {
+  const iso = accusationLockUntil(roomId);
+  if (!iso) return 0;
+  return Math.max(0, Math.ceil((Date.parse(iso) - Date.now()) / 1000));
+}
+/** Registra una acusación fallida: suma al contador y activa el bloqueo temporal. */
+export function penalizeWrongAccusation(roomId: number): { lockSeconds: number; wrong: number } {
+  const untilMs = Date.now() + ACCUSATION_LOCK_MS;
+  const untilIso = new Date(untilMs).toISOString();
+  db.prepare(
+    "UPDATE rooms SET wrong_accusations = wrong_accusations + 1, accusation_lock_until = ? WHERE id = ?"
+  ).run(untilIso, roomId);
+  const r = db
+    .prepare("SELECT wrong_accusations FROM rooms WHERE id = ?")
+    .get(roomId) as { wrong_accusations: number };
+  return { lockSeconds: Math.ceil(ACCUSATION_LOCK_MS / 1000), wrong: r.wrong_accusations };
+}
+
 // ===== Tablero de deduccion (hilos) =====
 export function getDeductions(roomId: number) {
   return db
@@ -285,16 +316,20 @@ export function getRoomState(room: Room) {
   return {
     room,
     case: c,
-    evidence: getEvidence(room.case_id),
+    evidence: getVisibleEvidence(room.case_id, room.id),
     suspects: getSuspects(room.case_id),
     objectives: getObjectives(room.case_id),
     timeline: getTimeline(room.case_id),
-    hints: getHints(room.case_id),
+    hints: getHints(room.case_id).slice(0, unlockedHintCount(room, room.case_id)),
     players: getPlayers(room.id),
     notes: getNotes(room.id),
     board: getBoard(room.id),
-    revealedHints: getRevealedHints(room.id),
     deductions: getDeductions(room.id),
     votes: getVotes(room.id),
+    searches: getSearches(room.id),
+    searchBudget: room.search_budget,
+    unlockedHints: unlockedHintCount(room, room.case_id),
+    secondsToNextHint: secondsToNextHint(room, room.case_id),
+    accusationLockUntil: accusationLockUntil(room.id),
   };
 }

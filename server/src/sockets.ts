@@ -90,48 +90,82 @@ export function registerSockets(io: Server): void {
       "attempt",
       ({ objectiveId, answer }: { objectiveId: number; answer: string }) => {
         if (!data.roomId || !answer?.trim()) return;
+        const room = repo.getRoom(data.roomId);
+        if (!room) return;
+
+        const objectives = repo.getObjectives(room.case_id) as {
+          id: number;
+          position: number;
+        }[];
+        const isAccusation = objectives.find((o) => o.position === 0)?.id === objectiveId;
+
+        // La acusación del culpable tiene cooldown tras fallar.
+        if (isAccusation) {
+          const lockLeft = repo.accusationLockSeconds(room.id);
+          if (lockLeft > 0) {
+            socket.emit(
+              "error:msg",
+              `Acusación bloqueada. Reúnan más pruebas: ${lockLeft}s restantes.`
+            );
+            return;
+          }
+        }
+
         const { correct } = repo.recordAttempt(
-          data.roomId,
+          room.id,
           objectiveId,
           data.playerId ?? null,
           answer.trim()
         );
         const player = data.playerId ? repo.getPlayer(data.playerId) : undefined;
-        io.to(roomChannel(data.roomId)).emit("attempt:result", {
+        io.to(roomChannel(room.id)).emit("attempt:result", {
           objectiveId,
           answer: answer.trim(),
-          correct, // 1 | 0 | null (null = no hay solucion configurada, verificar en la web)
+          correct,
           by: player?.name ?? "Alguien",
         });
-        // El objetivo 1 (culpable) resuelve el caso al acertar.
-        if (correct === 1) {
-          const objectives = repo.getObjectives(repo.getRoom(data.roomId)!.case_id) as {
-            id: number;
-            position: number;
-          }[];
-          const first = objectives.find((o) => o.position === 0);
-          if (first && first.id === objectiveId) {
-            repo.markSolved(data.roomId);
-            io.to(roomChannel(data.roomId)).emit("case:solved", {});
-          }
+
+        if (isAccusation && correct === 1) {
+          repo.markSolved(room.id);
+          io.to(roomChannel(room.id)).emit("case:solved", {});
+        } else if (isAccusation && correct === 0) {
+          // Castigo: bloquea nuevas acusaciones un rato.
+          const { lockSeconds, wrong } = repo.penalizeWrongAccusation(room.id);
+          io.to(roomChannel(room.id)).emit("accusation:locked", {
+            lockSeconds,
+            wrong,
+            until: repo.accusationLockUntil(room.id),
+          });
         }
       }
     );
 
-    // ===== Pistas =====
-    socket.on("hint:reveal", () => {
+    // ===== Registro / cateo de un sospechoso (gasta presupuesto compartido) =====
+    socket.on("search:request", ({ suspectId }: { suspectId: number }) => {
       if (!data.roomId) return;
       const room = repo.getRoom(data.roomId);
       if (!room) return;
-      const hint = repo.revealNextHint(room.id, room.case_id);
-      if (hint) {
-        io.to(roomChannel(room.id)).emit("hint:revealed", {
-          hintId: hint.id,
-          revealedHints: repo.getRevealedHints(room.id),
-        });
-      } else {
-        socket.emit("error:msg", "No quedan más pistas.");
+      const res = repo.requestSearch(room, suspectId, data.playerId ?? null);
+      if (!res.ok) {
+        socket.emit(
+          "error:msg",
+          res.reason === "no_budget"
+            ? "No quedan órdenes de registro. Deduzcan con las pruebas que ya tienen."
+            : "No se pudo realizar el registro."
+        );
+        return;
       }
+      const player = data.playerId ? repo.getPlayer(data.playerId) : undefined;
+      const suspect = repo.getSuspects(room.case_id).find((s) => s.id === suspectId);
+      // Reenvía a todos el nuevo estado de evidencia visible + presupuesto.
+      io.to(roomChannel(room.id)).emit("search:done", {
+        suspectId,
+        by: player?.name ?? "Alguien",
+        suspectName: suspect?.name ?? "sospechoso",
+        budgetLeft: res.budgetLeft,
+        evidence: repo.getVisibleEvidence(room.case_id, room.id),
+        searches: repo.getSearches(room.id),
+      });
     });
 
     // ===== Tablero de deduccion (hilos sospechoso <-> evidencia) =====
@@ -182,4 +216,32 @@ export function registerSockets(io: Server): void {
 
 function roomChannel(roomId: number): string {
   return `room:${roomId}`;
+}
+
+/**
+ * Revisa periódicamente las salas con jugadores conectados y, cuando el reloj
+ * desbloquea una nueva pista, la emite. Las pistas se basan en el tiempo desde
+ * que se creó la sala (una cada 10 min), así que solo notificamos el cambio.
+ */
+export function startHintTimer(io: Server): void {
+  const lastCount = new Map<number, number>();
+  setInterval(() => {
+    // Salas con al menos un socket conectado
+    for (const [channel] of io.sockets.adapter.rooms) {
+      if (!channel.startsWith("room:")) continue;
+      const roomId = Number(channel.slice(5));
+      const room = repo.getRoom(roomId);
+      if (!room) continue;
+      const unlocked = repo.unlockedHintCount(room, room.case_id);
+      const prev = lastCount.get(roomId) ?? unlocked; // primera vez: no notifica de golpe
+      if (unlocked > prev) {
+        io.to(channel).emit("hints:unlocked", {
+          unlockedHints: unlocked,
+          hints: repo.getHints(room.case_id).slice(0, unlocked),
+          secondsToNextHint: repo.secondsToNextHint(room, room.case_id),
+        });
+      }
+      lastCount.set(roomId, unlocked);
+    }
+  }, 15 * 1000); // chequeo cada 15s
 }
