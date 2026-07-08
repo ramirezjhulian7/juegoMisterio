@@ -1,0 +1,15 @@
+{
+  "name": "juego-misterio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Juego cooperativo para resolver misterios (Unsolved Case Files) con amigos en tiempo real",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "seed": "npm run seed --prefix server",
+    "build": "npm run build --prefix server && npm run build --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
