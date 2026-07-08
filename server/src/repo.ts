@@ -26,6 +26,13 @@ export function getEvidence(caseId: number): Evidence[] {
     .prepare("SELECT * FROM evidence WHERE case_id = ? ORDER BY position")
     .all(caseId) as Evidence[];
 }
+/** Evidencia visible en una sala: las bloqueadas solo si su sospechoso fue registrado. */
+export function getVisibleEvidence(caseId: number, roomId: number): Evidence[] {
+  const searched = new Set(getSearches(roomId).map((s) => s.suspect_id));
+  return getEvidence(caseId).filter(
+    (e) => !e.locked || (e.suspect_id != null && searched.has(e.suspect_id))
+  );
+}
 export function getSuspects(caseId: number): Suspect[] {
   return db.prepare("SELECT * FROM suspects WHERE case_id = ?").all(caseId) as Suspect[];
 }
@@ -33,6 +40,14 @@ export function getObjectives(caseId: number) {
   return db
     .prepare("SELECT id, case_id, prompt, position FROM objectives WHERE case_id = ? ORDER BY position")
     .all(caseId);
+}
+export function getTimeline(caseId: number) {
+  return db
+    .prepare("SELECT * FROM timeline_events WHERE case_id = ? ORDER BY position")
+    .all(caseId);
+}
+export function getHints(caseId: number) {
+  return db.prepare("SELECT * FROM hints WHERE case_id = ? ORDER BY position").all(caseId);
 }
 
 // ===== Salas =====
@@ -129,12 +144,15 @@ export function recordAttempt(
   answer: string
 ): { correct: number | null } {
   const obj = db
-    .prepare("SELECT answer FROM objectives WHERE id = ?")
-    .get(objectiveId) as { answer: string | null } | undefined;
+    .prepare("SELECT answer, accepts FROM objectives WHERE id = ?")
+    .get(objectiveId) as { answer: string | null; accepts: string | null } | undefined;
 
   let correct: number | null = null;
   if (obj?.answer) {
-    correct = normalize(obj.answer) === normalize(answer) ? 1 : 0;
+    const valid = new Set(
+      [obj.answer, ...(obj.accepts?.split("|") ?? [])].map((s) => normalize(s))
+    );
+    correct = valid.has(normalize(answer)) ? 1 : 0;
   }
   db.prepare(
     `INSERT INTO attempts (room_id, objective_id, player_id, answer, correct)
@@ -144,7 +162,121 @@ export function recordAttempt(
 }
 
 function normalize(s: string): string {
-  return s.trim().toLowerCase().replace(/\s+/g, " ");
+  return s
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // quita tildes
+    .replace(/\s+/g, " ");
+}
+
+// ===== Pistas por tiempo =====
+// Se desbloquea una pista cada HINT_INTERVAL_MS desde que se creó la sala.
+export const HINT_INTERVAL_MS = 10 * 60 * 1000; // 10 minutos
+
+/**
+ * Cuántas pistas están desbloqueadas en una sala según el tiempo transcurrido.
+ * A los 0 min: 1 pista. A los 10: 2. A los 20: 3, etc. (tope = total de pistas)
+ */
+export function unlockedHintCount(room: Room, caseId: number): number {
+  const total = (getHints(caseId) as unknown[]).length;
+  const createdMs = Date.parse(room.created_at.replace(" ", "T") + "Z");
+  const elapsed = Number.isNaN(createdMs) ? 0 : Date.now() - createdMs;
+  const byTime = 1 + Math.floor(elapsed / HINT_INTERVAL_MS);
+  return Math.max(0, Math.min(total, byTime));
+}
+
+/** Segundos hasta la próxima pista (null si ya están todas). */
+export function secondsToNextHint(room: Room, caseId: number): number | null {
+  const total = (getHints(caseId) as unknown[]).length;
+  const unlocked = unlockedHintCount(room, caseId);
+  if (unlocked >= total) return null;
+  const createdMs = Date.parse(room.created_at.replace(" ", "T") + "Z");
+  const elapsed = Number.isNaN(createdMs) ? 0 : Date.now() - createdMs;
+  const nextAt = unlocked * HINT_INTERVAL_MS; // ms desde creación para la siguiente
+  return Math.max(0, Math.ceil((nextAt - elapsed) / 1000));
+}
+
+// ===== Registros / cateos =====
+export function getSearches(roomId: number): { suspect_id: number; player_id: number | null }[] {
+  return db
+    .prepare("SELECT suspect_id, player_id FROM searches WHERE room_id = ? ORDER BY created_at")
+    .all(roomId) as { suspect_id: number; player_id: number | null }[];
+}
+/**
+ * Intenta registrar a un sospechoso. Devuelve el resultado:
+ *  - ok: se realizó (o ya estaba hecho)
+ *  - reason "no_budget" | "invalid": no se pudo.
+ * Consume 1 del presupuesto solo si es un sospechoso NUEVO.
+ */
+export function requestSearch(
+  room: Room,
+  suspectId: number,
+  playerId: number | null
+): { ok: boolean; reason?: string; budgetLeft: number } {
+  const suspect = db
+    .prepare("SELECT id FROM suspects WHERE id = ? AND case_id = ?")
+    .get(suspectId, room.case_id);
+  if (!suspect) return { ok: false, reason: "invalid", budgetLeft: room.search_budget };
+
+  const already = db
+    .prepare("SELECT 1 FROM searches WHERE room_id = ? AND suspect_id = ?")
+    .get(room.id, suspectId);
+  if (already) return { ok: true, budgetLeft: room.search_budget };
+
+  if (room.search_budget <= 0)
+    return { ok: false, reason: "no_budget", budgetLeft: 0 };
+
+  const tx = db.transaction(() => {
+    db.prepare(
+      "INSERT INTO searches (room_id, suspect_id, player_id) VALUES (?, ?, ?)"
+    ).run(room.id, suspectId, playerId);
+    db.prepare("UPDATE rooms SET search_budget = search_budget - 1 WHERE id = ?").run(room.id);
+  });
+  tx();
+  return { ok: true, budgetLeft: room.search_budget - 1 };
+}
+
+// ===== Tablero de deduccion (hilos) =====
+export function getDeductions(roomId: number) {
+  return db
+    .prepare("SELECT * FROM deductions WHERE room_id = ? ORDER BY created_at")
+    .all(roomId);
+}
+export function addDeduction(
+  roomId: number,
+  suspectId: number,
+  evidenceId: number,
+  playerId: number | null,
+  label: string | null
+) {
+  db.prepare(
+    `INSERT OR IGNORE INTO deductions (room_id, suspect_id, evidence_id, player_id, label)
+     VALUES (?, ?, ?, ?, ?)`
+  ).run(roomId, suspectId, evidenceId, playerId, label);
+  return db
+    .prepare(
+      "SELECT * FROM deductions WHERE room_id = ? AND suspect_id = ? AND evidence_id = ?"
+    )
+    .get(roomId, suspectId, evidenceId);
+}
+export function removeDeduction(id: number, roomId: number): void {
+  db.prepare("DELETE FROM deductions WHERE id = ? AND room_id = ?").run(id, roomId);
+}
+
+// ===== Votacion =====
+export function getVotes(roomId: number) {
+  return db
+    .prepare("SELECT room_id, player_id, suspect_id FROM votes WHERE room_id = ?")
+    .all(roomId);
+}
+export function castVote(roomId: number, playerId: number, suspectId: number): void {
+  db.prepare(
+    `INSERT INTO votes (room_id, player_id, suspect_id, updated_at)
+     VALUES (?, ?, ?, datetime('now'))
+     ON CONFLICT(room_id, player_id)
+     DO UPDATE SET suspect_id = excluded.suspect_id, updated_at = datetime('now')`
+  ).run(roomId, playerId, suspectId);
 }
 
 /** Snapshot completo del estado de una sala para sincronizar al conectarse. */
@@ -156,8 +288,13 @@ export function getRoomState(room: Room) {
     evidence: getEvidence(room.case_id),
     suspects: getSuspects(room.case_id),
     objectives: getObjectives(room.case_id),
+    timeline: getTimeline(room.case_id),
+    hints: getHints(room.case_id),
     players: getPlayers(room.id),
     notes: getNotes(room.id),
     board: getBoard(room.id),
+    revealedHints: getRevealedHints(room.id),
+    deductions: getDeductions(room.id),
+    votes: getVotes(room.id),
   };
 }

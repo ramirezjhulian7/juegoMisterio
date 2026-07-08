@@ -1,12 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import type { Note, Player, RoomState, SuspectStatus, Evidence } from "../types";
+import type {
+  Note,
+  Player,
+  RoomState,
+  SuspectStatus,
+  Evidence,
+  Deduction,
+  Vote,
+} from "../types";
+import Briefing from "../components/Briefing";
 import Viewer from "../components/Viewer";
 import Suspects from "../components/Suspects";
 import Notes from "../components/Notes";
 import Gallery from "../components/Gallery";
 import SolveBar from "../components/SolveBar";
+import Timeline from "../components/Timeline";
+import Hints from "../components/Hints";
+import DeductionBoard from "../components/DeductionBoard";
+import VoteBox from "../components/VoteBox";
+
+type Tab = "evidencias" | "timeline" | "deduccion" | "votacion";
 
 export default function Room() {
   const { code } = useParams();
@@ -14,13 +29,15 @@ export default function Room() {
   const [state, setState] = useState<RoomState | null>(null);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
+  const [tab, setTab] = useState<Tab>("evidencias");
   const [viewer, setViewer] = useState<{ list: Evidence[]; index: number } | null>(null);
+  const [showBriefing, setShowBriefing] = useState(true);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
 
   function flash(msg: string) {
     setToast(msg);
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(""), 3500);
+    toastTimer.current = setTimeout(() => setToast(""), 3800);
   }
 
   useEffect(() => {
@@ -30,40 +47,61 @@ export default function Room() {
 
     socket.on("room:state", (s: RoomState) => setState(s));
     socket.on("players:update", (players: Player[]) =>
-      setState((prev) => (prev ? { ...prev, players } : prev))
+      setState((p) => (p ? { ...p, players } : p))
     );
     socket.on("note:added", (note: Note) =>
-      setState((prev) => (prev ? { ...prev, notes: [...prev.notes, note] } : prev))
+      setState((p) => (p ? { ...p, notes: [...p.notes, note] } : p))
     );
     socket.on("note:deleted", ({ noteId }: { noteId: number }) =>
-      setState((prev) =>
-        prev ? { ...prev, notes: prev.notes.filter((n) => n.id !== noteId) } : prev
-      )
+      setState((p) => (p ? { ...p, notes: p.notes.filter((n) => n.id !== noteId) } : p))
     );
     socket.on(
       "board:updated",
       ({ suspectId, status }: { suspectId: number; status: SuspectStatus }) =>
-        setState((prev) => {
-          if (!prev) return prev;
-          const board = prev.board.filter((b) => b.suspect_id !== suspectId);
+        setState((p) => {
+          if (!p) return p;
+          const board = p.board.filter((b) => b.suspect_id !== suspectId);
           board.push({ suspect_id: suspectId, status });
-          return { ...prev, board };
+          return { ...p, board };
         })
+    );
+    socket.on(
+      "hint:revealed",
+      ({ revealedHints }: { revealedHints: number[] }) =>
+        setState((p) => (p ? { ...p, revealedHints } : p))
+    );
+    socket.on("deduction:added", (d: Deduction) =>
+      setState((p) =>
+        p && !p.deductions.some((x) => x.id === d.id)
+          ? { ...p, deductions: [...p.deductions, d] }
+          : p
+      )
+    );
+    socket.on("deduction:removed", ({ id }: { id: number }) =>
+      setState((p) => (p ? { ...p, deductions: p.deductions.filter((d) => d.id !== id) } : p))
+    );
+    socket.on("votes:update", (votes: Vote[]) =>
+      setState((p) => (p ? { ...p, votes } : p))
     );
     socket.on(
       "attempt:result",
       ({ correct, by, answer }: { correct: number | null; by: string; answer: string }) => {
-        if (correct === 1) {
-          flash(`✅ ¡${by} resolvió el caso con "${answer}"!`);
-          setState((prev) => (prev ? { ...prev, room: { ...prev.room, solved: 1 } } : prev));
-        } else if (correct === 0) {
-          flash(`❌ "${answer}" (por ${by}) no es correcto.`);
-        } else {
-          flash(`📤 ${by} propuso: "${answer}". Verifiquen en la web oficial.`);
-        }
+        if (correct === 1) flash(`✅ ¡${by} acertó con "${answer}"!`);
+        else if (correct === 0) flash(`❌ "${answer}" (por ${by}) no es correcto.`);
+        else flash(`📤 ${by} propuso: "${answer}".`);
       }
     );
-    socket.on("error:msg", (m: string) => setError(m));
+    socket.on("case:solved", () =>
+      setState((p) => (p ? { ...p, room: { ...p.room, solved: 1 } } : p))
+    );
+    socket.on("error:msg", (m: string) => {
+      // Si aún no hay estado, es un error de entrada (sala llena / inexistente).
+      setState((p) => {
+        if (!p) setError(m);
+        return p;
+      });
+      flash("⚠️ " + m);
+    });
 
     return () => {
       socket.off();
@@ -80,20 +118,28 @@ export default function Room() {
     );
   if (!state) return <div className="home">Conectando a la sala…</div>;
 
-  const statusOf = (suspectId: number): SuspectStatus =>
-    (state.board.find((b) => b.suspect_id === suspectId)?.status ?? "unknown") as SuspectStatus;
+  const statusOf = (id: number): SuspectStatus =>
+    (state.board.find((b) => b.suspect_id === id)?.status ?? "unknown") as SuspectStatus;
+
+  const TABS: { key: Tab; label: string }[] = [
+    { key: "evidencias", label: "🗂️ Evidencias" },
+    { key: "timeline", label: "🕒 Línea de tiempo" },
+    { key: "deduccion", label: "🧩 Deducción" },
+    { key: "votacion", label: "🗳️ Votación" },
+  ];
 
   return (
     <div className="room">
       <div className="topbar">
-        <span>🕵️</span>
+        <span style={{ fontSize: 20 }}>🕵️</span>
         <div>
           <div style={{ fontWeight: 600 }}>{state.case.title}</div>
           <div className="obj">{state.case.objective}</div>
         </div>
         <div className="spacer" />
+        {state.room.solved === 1 && <span className="solved-badge">CASO RESUELTO</span>}
         <div>
-          <div style={{ fontSize: 11, color: "var(--muted)" }}>CÓDIGO DE SALA</div>
+          <div style={{ fontSize: 11, color: "var(--muted)" }}>CÓDIGO</div>
           <div className="code">{state.room.code}</div>
         </div>
         <button onClick={() => { navigator.clipboard?.writeText(state.room.code); flash("Código copiado"); }}>
@@ -120,27 +166,60 @@ export default function Room() {
             const idx = state.evidence.findIndex((e) => e.image_path === s.mugshot_path);
             if (idx >= 0) setViewer({ list: state.evidence, index: idx });
           }}
-          onStatus={(suspectId, status) => socket.emit("board:set", { suspectId, status })}
+          onStatus={(id, status) => socket.emit("board:set", { suspectId: id, status })}
         />
       </div>
 
-      {/* Centro: evidencias */}
+      {/* Centro: pestañas */}
       <div className="col center">
-        <SolveBar
-          objectives={state.objectives}
-          solved={state.room.solved === 1}
-          verifyUrl={state.case.verify_url}
-          onSubmit={(objectiveId, answer) => socket.emit("attempt", { objectiveId, answer })}
-        />
-        <Gallery
-          evidence={state.evidence}
-          onOpen={(index) => setViewer({ list: state.evidence, index })}
-        />
+        <div className="tabs">
+          {TABS.map((t) => (
+            <button key={t.key} className={tab === t.key ? "on" : ""} onClick={() => setTab(t.key)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "evidencias" && (
+          <Gallery evidence={state.evidence} onOpen={(i) => setViewer({ list: state.evidence, index: i })} />
+        )}
+        {tab === "timeline" && <Timeline events={state.timeline} />}
+        {tab === "deduccion" && (
+          <DeductionBoard
+            suspects={state.suspects}
+            evidence={state.evidence}
+            deductions={state.deductions}
+            players={state.players}
+            youId={state.you.id}
+            onAdd={(suspectId, evidenceId, label) =>
+              socket.emit("deduction:add", { suspectId, evidenceId, label })
+            }
+            onRemove={(id) => socket.emit("deduction:remove", { id })}
+            onView={(i) => setViewer({ list: state.evidence, index: i })}
+          />
+        )}
+        {tab === "votacion" && (
+          <VoteBox
+            suspects={state.suspects}
+            votes={state.votes}
+            players={state.players}
+            youId={state.you.id}
+            objectives={state.objectives}
+            solved={state.room.solved === 1}
+            onVote={(suspectId) => socket.emit("vote", { suspectId })}
+            onSubmit={(objectiveId, answer) => socket.emit("attempt", { objectiveId, answer })}
+          />
+        )}
       </div>
 
-      {/* Derecha: notas compartidas */}
+      {/* Derecha: pistas + notas */}
       <div className="col right">
-        <h3>Cuaderno del equipo</h3>
+        <Hints
+          hints={state.hints}
+          revealed={state.revealedHints}
+          onReveal={() => socket.emit("hint:reveal")}
+        />
+        <h3 style={{ marginTop: 18 }}>Cuaderno del equipo</h3>
         <Notes
           notes={state.notes}
           players={state.players}
@@ -150,6 +229,25 @@ export default function Room() {
         />
       </div>
 
+      {/* SolveBar flotante siempre visible salvo en votación (que ya lo incluye) */}
+      {tab !== "votacion" && (
+        <SolveBar
+          objectives={state.objectives}
+          solved={state.room.solved === 1}
+          verifyUrl={state.case.verify_url}
+          onSubmit={(objectiveId, answer) => socket.emit("attempt", { objectiveId, answer })}
+        />
+      )}
+
+      {showBriefing && state.case.briefing && (
+        <Briefing
+          title={state.case.title}
+          caseNumber={state.case.case_number}
+          briefing={state.case.briefing}
+          onClose={() => setShowBriefing(false)}
+        />
+      )}
+
       {viewer && (
         <Viewer
           list={viewer.list}
@@ -158,7 +256,6 @@ export default function Room() {
           onClose={() => setViewer(null)}
         />
       )}
-
       {toast && <div className="toast">{toast}</div>}
     </div>
   );

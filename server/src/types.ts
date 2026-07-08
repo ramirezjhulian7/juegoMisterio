@@ -16,6 +16,7 @@ export interface Case {
   case_number: string | null;
   title: string;
   objective: string;
+  briefing: string | null;
   verify_url: string | null;
   cover_path: string | null;
 }
@@ -27,6 +28,8 @@ export interface Evidence {
   title: string;
   image_path: string;
   position: number;
+  locked: number;
+  suspect_id: number | null;
 }
 
 export interface Suspect {
@@ -62,6 +65,39 @@ export interface Room {
   case_id: number;
   host_name: string | null;
   max_players: number;
+  search_budget: number;
   solved: number;
   created_at: string;
+}
+
+export interface TimelineEvent {
+  id: number;
+  case_id: number;
+  time_label: string;
+  title: string;
+  description: string | null;
+  position: number;
+}
+
+export interface Hint {
+  id: number;
+  case_id: number;
+  text: string;
+  position: number;
+}
+
+export interface Deduction {
+  id: number;
+  room_id: number;
+  suspect_id: number;
+  evidence_id: number;
+  player_id: number | null;
+  label: string | null;
+  created_at: string;
+}
+
+export interface Vote {
+  room_id: number;
+  player_id: number;
+  suspect_id: number;
 }

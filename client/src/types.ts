@@ -6,6 +6,7 @@ export interface Case {
   case_number: string | null;
   title: string;
   objective: string;
+  briefing: string | null;
   verify_url: string | null;
   cover_path: string | null;
 }
@@ -61,14 +62,50 @@ export interface Room {
   solved: number;
 }
 
+export interface TimelineEvent {
+  id: number;
+  case_id: number;
+  time_label: string;
+  title: string;
+  description: string | null;
+  position: number;
+}
+
+export interface Hint {
+  id: number;
+  case_id: number;
+  text: string;
+  position: number;
+}
+
+export interface Deduction {
+  id: number;
+  room_id: number;
+  suspect_id: number;
+  evidence_id: number;
+  player_id: number | null;
+  label: string | null;
+}
+
+export interface Vote {
+  room_id: number;
+  player_id: number;
+  suspect_id: number;
+}
+
 export interface RoomState {
   room: Room;
   case: Case;
   evidence: Evidence[];
   suspects: Suspect[];
   objectives: Objective[];
+  timeline: TimelineEvent[];
+  hints: Hint[];
   players: Player[];
   notes: Note[];
   board: { suspect_id: number; status: SuspectStatus }[];
+  revealedHints: number[];
+  deductions: Deduction[];
+  votes: Vote[];
   you: Player;
 }

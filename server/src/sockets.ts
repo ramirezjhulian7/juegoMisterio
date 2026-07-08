@@ -96,7 +96,6 @@ export function registerSockets(io: Server): void {
           data.playerId ?? null,
           answer.trim()
         );
-        if (correct === 1) repo.markSolved(data.roomId);
         const player = data.playerId ? repo.getPlayer(data.playerId) : undefined;
         io.to(roomChannel(data.roomId)).emit("attempt:result", {
           objectiveId,
@@ -104,8 +103,73 @@ export function registerSockets(io: Server): void {
           correct, // 1 | 0 | null (null = no hay solucion configurada, verificar en la web)
           by: player?.name ?? "Alguien",
         });
+        // El objetivo 1 (culpable) resuelve el caso al acertar.
+        if (correct === 1) {
+          const objectives = repo.getObjectives(repo.getRoom(data.roomId)!.case_id) as {
+            id: number;
+            position: number;
+          }[];
+          const first = objectives.find((o) => o.position === 0);
+          if (first && first.id === objectiveId) {
+            repo.markSolved(data.roomId);
+            io.to(roomChannel(data.roomId)).emit("case:solved", {});
+          }
+        }
       }
     );
+
+    // ===== Pistas =====
+    socket.on("hint:reveal", () => {
+      if (!data.roomId) return;
+      const room = repo.getRoom(data.roomId);
+      if (!room) return;
+      const hint = repo.revealNextHint(room.id, room.case_id);
+      if (hint) {
+        io.to(roomChannel(room.id)).emit("hint:revealed", {
+          hintId: hint.id,
+          revealedHints: repo.getRevealedHints(room.id),
+        });
+      } else {
+        socket.emit("error:msg", "No quedan más pistas.");
+      }
+    });
+
+    // ===== Tablero de deduccion (hilos sospechoso <-> evidencia) =====
+    socket.on(
+      "deduction:add",
+      ({
+        suspectId,
+        evidenceId,
+        label = null,
+      }: {
+        suspectId: number;
+        evidenceId: number;
+        label?: string | null;
+      }) => {
+        if (!data.roomId) return;
+        const d = repo.addDeduction(
+          data.roomId,
+          suspectId,
+          evidenceId,
+          data.playerId ?? null,
+          label ? String(label).slice(0, 200) : null
+        );
+        io.to(roomChannel(data.roomId)).emit("deduction:added", d);
+      }
+    );
+
+    socket.on("deduction:remove", ({ id }: { id: number }) => {
+      if (!data.roomId) return;
+      repo.removeDeduction(id, data.roomId);
+      io.to(roomChannel(data.roomId)).emit("deduction:removed", { id });
+    });
+
+    // ===== Votacion final =====
+    socket.on("vote", ({ suspectId }: { suspectId: number }) => {
+      if (!data.roomId || !data.playerId) return;
+      repo.castVote(data.roomId, data.playerId, suspectId);
+      io.to(roomChannel(data.roomId)).emit("votes:update", repo.getVotes(data.roomId));
+    });
 
     socket.on("disconnect", () => {
       if (data.playerId && data.roomId) {

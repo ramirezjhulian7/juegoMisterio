@@ -20,11 +20,10 @@ export default function SolveBar({ objectives, solved, verifyUrl, onSubmit }: Pr
     }
   }
 
-  if (solved)
-    return <div className="solve-banner ok">🎉 ¡Caso resuelto! Gran trabajo, equipo.</div>;
+  if (solved) return null;
 
   return (
-    <div className="card" style={{ marginBottom: 14 }}>
+    <div className="solvebar-float">
       {!open ? (
         <button className="primary" onClick={() => setOpen(true)}>
           🔎 Proponer solución
